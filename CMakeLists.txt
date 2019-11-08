@@ -21,8 +21,13 @@ SET(SOURCES
         heat_sycl.cpp
 )
 
+SET(SOURCES2
+        heat_sycl_1drange.cpp
+)
+
 
 add_executable(heat ${SOURCES})
+add_executable(heat_1drange ${SOURCES2})
 
 target_compile_options(heat
         PUBLIC
@@ -46,4 +51,9 @@ target_compile_options(heat PUBLIC "$<$<CONFIG:DEBUG>:${DEBUG_OPTIONS}>")
 add_sycl_to_target(
         TARGET heat
         SOURCES ${SOURCES}
+        ${CMAKE_CURRENT_BINARY_DIR}) # must be the last
+
+add_sycl_to_target(
+        TARGET heat_1drange
+        SOURCES ${SOURCES2}
         ${CMAKE_CURRENT_BINARY_DIR}) # must be the last
