@@ -1,0 +1,10 @@
+.DS_Store
+*.o
+build/
+*.sycl
+heat
+*.out
+
+*.o*
+*.e*
+
