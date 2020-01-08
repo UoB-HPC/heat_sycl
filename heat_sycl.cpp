@@ -222,8 +222,8 @@ void solve(cl::sycl::queue& queue, const unsigned int n, const double alpha, con
 
     // Loop over the nxn grid
     cgh.parallel_for<class solve_kernel>(cl::sycl::range<2>{n, n}, [=](cl::sycl::id<2> idx) {
-      int j = idx[0];
-      int i = idx[1];
+      size_t j = idx[0];
+      size_t i = idx[1];
 
       // Update the 5-point stencil, using boundary conditions on the edges of the domain.
       // Boundaries are zero because the MMS solution is zero there.
