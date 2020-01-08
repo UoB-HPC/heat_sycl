@@ -189,7 +189,7 @@ void initial_value(cl::sycl::queue& queue, const unsigned int n, const double dx
       int j = idx[0];
       double y = dx * (j+1); // Physical y position
       double x = dx * (i+1); // Physical x position
-      ua[j][i] = cl::sycl::sin(PI * x / length) * cl::sycl::sin(PI * y / length);
+      ua[idx] = cl::sycl::sin(PI * x / length) * cl::sycl::sin(PI * y / length);
     });
   });
 }
