@@ -28,8 +28,8 @@ kernel void solve(const unsigned int n, const double alpha, const double dx, con
   const double r = alpha * dt / (dx * dx);
   const double r2 = 1.0 - 4.0*r;
 
-  size_t j = get_global_id(1);
-  size_t i = get_global_id(0);
+  int j = get_global_id(1);
+  int i = get_global_id(0);
 
   // Update the 5-point stencil, using boundary conditions on the edges of the domain.
   // Boundaries are zero because the MMS solution is zero there.
