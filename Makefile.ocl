@@ -1,0 +1,4 @@
+
+heat_ocl: heat_ocl.cpp kernels.cl Makefile.ocl
+	g++ -std=c++11 -O3 -I. heat_ocl.cpp -lOpenCL -o heat_ocl
+

@@ -42,7 +42,7 @@
 #include <CL/cl2.hpp>
 
 // Key constants used in this program
-#define PI cl::sycl::acos(-1.0) // Pi
+#define PI std::acos(-1.0) // Pi
 #define LINE "--------------------" // A line for fancy output
 
 // Function definitions
@@ -104,8 +104,13 @@ int main(int argc, char *argv[]) {
     exit(EXIT_FAILURE);
   }
 
-  cl::Device device;
-  platforms[0].get_devices(CL_DEVICE_TYPE_GPU, &device);
+  std::vector<cl::Device> device_list;
+  platforms[0].getDevices(CL_DEVICE_TYPE_GPU, &device_list);
+  if (device_list.size() < 1) {
+    std::cerr << "Error: no OpenCL devices" << std::endl;
+    exit(EXIT_FAILURE);
+  }
+  cl::Device device = device_list[0];
   std::string device_name;
   device.getInfo(CL_DEVICE_NAME, &device_name);
 
