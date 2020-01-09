@@ -1,4 +1,5 @@
 
+#define PI acos(-1.0) // Pi
 
 // Sets the mesh to an initial value, determined by the MMS scheme
 kernel void initial_value(const unsigned int n, const double dx, const double length, global double * u) {
