@@ -183,12 +183,11 @@ int main(int argc, char *argv[]) {
     // Call the solve kernel
     // Computes u_tmp at the next timestep
     // given the value of u at the current timestep
-    solve(cl::EnqueueArgs(queue, cl::NDRange(n,n)), n, alpha, dx, dt, u, u_tmp);
+    if (t % 2 == 0)
+      solve(cl::EnqueueArgs(queue, cl::NDRange(n,n)), n, alpha, dx, dt, u, u_tmp);
+    else
+      solve(cl::EnqueueArgs(queue, cl::NDRange(n,n)), n, alpha, dx, dt, u_tmp, u);
 
-    // Pointer swap
-    auto tmp = u;
-    u = u_tmp;
-    u_tmp = tmp;
   }
   // Stop solve timer
   queue.finish();
