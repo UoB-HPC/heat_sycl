@@ -135,9 +135,10 @@ int main(int argc, char *argv[]) {
   cudaMalloc(&u_tmp, sizeof(double)*n*n);
 
   // Set the initial value of the grid under the MMS scheme
-  int n_ceil = (n % 64 == 0) ? n/64 : (n/64) + 1;
+  const int block_size = 16;
+  int n_ceil = (n % block_size == 0) ? n/block_size : (n/block_size) + 1;
   dim3 grid(n_ceil, n_ceil);
-  dim3 block(64, 64);
+  dim3 block(block_size, block_size);
   initial_value<<<grid, block>>>(n, dx, length, u);
   zero<<<grid, block>>>(n, u_tmp);
 
