@@ -45,7 +45,7 @@
 // Function definitions
 __global__ void initial_value(const unsigned int n, const double dx, const double length, double * u);
 __global__ void zero(const unsigned int n, double * u);
-__global__ void solve(const unsigned int n, const double alpha, const double dx, const double dt, double * restrict u, double * restrict u_tmp);
+__global__ void solve(const unsigned int n, const double alpha, const double dx, const double dt, double * __restrict__ u, double * __restrict__ u_tmp);
 double solution(const double t, const double x, const double y, const double alpha, const double length);
 double l2norm(const unsigned int n, const double * u, const int nsteps, const double dt, const double alpha, const double dx, const double length);
 
@@ -97,7 +97,7 @@ int main(int argc, char *argv[]) {
 
   cudaDeviceProp prop;
   cudaGetDeviceProperties(&prop, 0);
-  char device_name[256] = prop.name;
+  char *device_name = prop.name;
 
   // Print message detailing runtime configuration
   std::cout
@@ -219,13 +219,13 @@ __global__ void zero(const unsigned int n, double * u) {
 
 // Compute the next timestep, given the current timestep
 // Loop over the nxn grid
-__global__ void solve(const unsigned int n, const double alpha, const double dx, const double dt, double * restrict u, double * restrict u_tmp) {
+__global__ void solve(const unsigned int n, const double alpha, const double dx, const double dt, double * __restrict__ u, double * __restrict__ u_tmp) {
 
   // Finite difference constant multiplier
   const double r = alpha * dt / (dx * dx);
   const double r2 = 1.0 - 4.0*r;
 
-  int j = blockIdx.y * blockDim.y + threadIdx.u;
+  int j = blockIdx.y * blockDim.y + threadIdx.y;
   int i = blockIdx.x * blockDim.x + threadIdx.x;
 
   if (i >= n || j >= n) return;
