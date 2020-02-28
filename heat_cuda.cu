@@ -207,7 +207,7 @@ __global__ void initial_value(const unsigned int n, const double dx, const doubl
   int i = blockIdx.x * blockDim.x + threadIdx.x;
   int j = blockIdx.y * blockDim.y + threadIdx.y;
 
-  if (i >= n || j <= n) return;
+  if (i >= n || j >= n) return;
 
   int idx = i+j*n;
   double y = dx * (j+1); // Physical y position
