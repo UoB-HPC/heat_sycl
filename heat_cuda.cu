@@ -143,7 +143,11 @@ int main(int argc, char *argv[]) {
   zero<<<grid, block>>>(n, u_tmp);
 
   // Ensure everything is initalised on the device
-  cudaDeviceSynchronize();
+  cudaError_t err = cudaDeviceSynchronize();
+  if (err != cudaSuccess) {
+    std::cerr << "CUDA error after initalisation" << std::endl;
+    exit(EXIT_FAILURE);
+  }
 
   //
   // Run through timesteps under the explicit scheme
@@ -162,13 +166,18 @@ int main(int argc, char *argv[]) {
       solve<<<grid, block>>>(n, alpha, dx, dt, u_tmp, u);
 
   }
+
   // Stop solve timer
   cudaDeviceSynchronize();
   auto toc = std::chrono::high_resolution_clock::now();
 
   // Get access to u on the host
   double *u_host = new double[n*n];
-  cudaMemcpy(u_host, u, sizeof(double)*n*n, cudaMemcpyDeviceToHost);
+  err = cudaMemcpy(u_host, u, sizeof(double)*n*n, cudaMemcpyDeviceToHost);
+  if (err != cudaSuccess) {
+    std::cerr << "CUDA error on copying back data" << std::endl;
+    exit(EXIT_FAILURE);
+  }
 
   //
   // Check the L2-norm of the computed solution
