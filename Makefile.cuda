@@ -1,4 +1,4 @@
 
 heat_cuda: heat_cuda.cu Makefile.cuda
-	nvcc -std=c++11 -O3 heat_cuda.cu -arch=sm_60 -o $@
+	nvcc -std=c++11 -O3 heat_cuda.cu -arch=sm_75 -o $@
 
