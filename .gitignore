@@ -2,9 +2,13 @@
 *.o
 build/
 *.sycl
-heat
 *.out
 
 *.o*
 *.e*
+
+heat
+heat_ocl
+heat_cuda
+heat_hip
 
