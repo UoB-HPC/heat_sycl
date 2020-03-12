@@ -159,6 +159,7 @@ int main(int argc, char *argv[]) {
   printf("Error (L2norm): %E\n", norm);
   printf("Solve time (s): %lf\n", toc-tic);
   printf("Total time (s): %lf\n", stop-start);
+  printf("Bandwidth (GB/s): %lf\n", 1.0E-9*2.0*n*n*nsteps*sizeof(double)/(toc-tic));
   printf(LINE);
 
   // Free the memory
@@ -172,13 +173,14 @@ int main(int argc, char *argv[]) {
 void initial_value(const int n, const double dx, const double length, double * restrict u) {
 
   double y = dx;
+#pragma omp parallel for firstprivate(y)
   for (int j = 0; j < n; ++j) {
+    double y = (double)(j+1)*dx; // Physical y position
     double x = dx; // Physical x position
     for (int i = 0; i < n; ++i) {
       u[i+j*n] = sin(PI * x / length) * sin(PI * y / length);
       x += dx;
     }
-    y += dx; // Physical y position
   }
 
 }
@@ -187,6 +189,7 @@ void initial_value(const int n, const double dx, const double length, double * r
 // Zero the array u
 void zero(const int n, double * restrict u) {
 
+#pragma omp parallel for
   for (int j = 0; j < n; ++j) {
     for (int i = 0; i < n; ++i) {
       u[i+j*n] = 0.0;
@@ -204,6 +207,7 @@ void solve(const int n, const double alpha, const double dx, const double dt, co
   const double r2 = 1.0 - 4.0*r;
 
   // Loop over the nxn grid
+#pragma omp parallel for
   for (int j = 0; j < n; ++j) {
     for (int i = 0; i < n; ++i) {
 
