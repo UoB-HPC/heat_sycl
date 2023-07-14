@@ -13,11 +13,11 @@
 #define LINE "--------------------\n" // A line for fancy output
 
 // Function definitions
-void initial_value(const unsigned int n, const double dx, const double length, std::mdspan<double, std::dextents<unsigned int, 2>> u);
-void zero(const unsigned int n,std::mdspan < double, std::dextents<unsigned int, 2>> u);
-void solve(const unsigned int n, const double alpha, const double dx, const double dt, const std::mdspan<double, std::dextents<unsigned int, 2>> u, const std::mdspan<double, std::dextents<unsigned int, 2>> u_tmp);
+void initial_value(const int n, const double dx, const double length, std::mdspan<double, std::dextents<unsigned int, 2>> u);
+void zero(const int n,std::mdspan < double, std::dextents<unsigned int, 2>> u);
+void solve(const int n, const double alpha, const double dx, const double dt, const std::mdspan<double, std::dextents<unsigned int, 2>> u, const std::mdspan<double, std::dextents<unsigned int, 2>> u_tmp);
 double solution(const double t, const double x, const double y, const double alpha, const double length);
-double l2norm(const unsigned int n, const std::mdspan<double, std::dextents<unsigned int, 2>> u, const unsigned int nsteps, const double dt, const double alpha, const double dx, const double length);
+double l2norm(const int n, const std::mdspan<double, std::dextents<unsigned int, 2>> u, const unsigned int nsteps, const double dt, const double alpha, const double dx, const double length);
 
 // Main function
 int main(int argc, char *argv[])
@@ -26,7 +26,7 @@ int main(int argc, char *argv[])
   auto start = std::chrono::high_resolution_clock::now();
 
   // Problem size, forms an nxn grid
-  unsigned int n = 1000;
+  int n = 1000;
 
   // Number of timesteps
   unsigned int nsteps = 10;
@@ -140,40 +140,51 @@ int main(int argc, char *argv[])
       << LINE << std::endl;
 
 }
+
 // Sets the mesh to an initial value, determined by the MMS scheme
-void initial_value(const unsigned int n, const double dx, const double length, std::mdspan<double, std::dextents<unsigned int, 2>> u)
+void initial_value(const int n, const double dx, const double length, std::mdspan<double, std::dextents<unsigned int, 2>> u)
 {
+  // Create 1D ranges
+  auto xs = std::views::iota(0, n);
+  auto ys = std::views::iota(0, n);
+  // Combine xs and ys to create 2D range
+  auto ids = std::views::cartesian_product(xs, ys);
+
   // Loop over all grid points (excluding boundaries)
-  std::for_each(std::execution::par, &u(0, 0), &u(n - 1, n - 1), [u, n, dx, length](int idx){
-    const int j = int(idx / n); // Column index
-    const int i = idx -(j*n); // Row index
+  std::for_each(std::execution::par, ids.begin(), ids.end(), [u, n, dx, length](auto idx) {
+    auto [i,j] = idx;
 
     const double x = (i + 1) * dx; // x-coordinate
     const double y = (j + 1) * dx; // y-coordinate
 
     // Compute the known solution using MMS scheme
     u(i,j) = sin(PI * x / length) * sin(PI * y / length); 
+
   });
 }
 
 // Zero the array u
-void zero(const unsigned int n, std::mdspan<double, std::dextents<unsigned int, 2>> u)
+void zero(const int n, std::mdspan<double, std::dextents<unsigned int, 2>> u)
 {
   std::fill(std::execution::par, &u(0,0), &u(n-1,n-1), 0.0);
 }
 
 // Function to solve the heat equation
-void solve(const unsigned int n, const double alpha, const double dx, const double dt, const std::mdspan<double, std::dextents<unsigned int, 2>> u, std::mdspan<double, std::dextents<unsigned int, 2>> u_tmp)
+void solve(const int n, const double alpha, const double dx, const double dt, const std::mdspan<double, std::dextents<unsigned int, 2>> u, std::mdspan<double, std::dextents<unsigned int, 2>> u_tmp)
 {
   // Finite difference constant multiplier
   const double r = alpha * dt / (dx * dx);
   const double r2 = 1.0 - 4.0 * r;
 
-  // Loop over all grid points (excluding boundaries)
-  std::for_each_n(std::execution::par, &u_tmp(0, 0), n*n, [u, u_tmp, n, r, r2](int idx) {
-    const int j = int(idx / n); // Column index
-    const int i = idx -(j*n); // Row index
+  // Create 1D ranges
+  auto xs = std::views::iota(0, n);
+  auto ys = std::views::iota(0, n);
+  //Combine xs and ys to create 2D range
+  auto ids = std::views::cartesian_product(xs, ys);
 
+  // Loop over all grid points (excluding boundaries)
+  std::for_each(std::execution::par_unseq, ids.begin(), ids.end(), [u, u_tmp, n, r, r2](auto idx) {
+    auto [i,j] = idx;
     // Update the 5-point stencil, using boundary conditions on the edges of the domain.
     // Boundaries are zero because the MMS solution is zero there.
     u_tmp(i,j) = r2 * u(i,j) +
@@ -191,7 +202,7 @@ double solution(const double t, const double x, const double y, const double alp
 
 // Computes the L2-norm of the computed grid and the MMS known solution
 // The known solution is the same as the boundary function.
-double l2norm(const unsigned int n, const std::mdspan<double,std::dextents<unsigned int, 2>> u, const unsigned int nsteps, const double dt, const double alpha, const double dx, const double length) {
+double l2norm(const int n, const std::mdspan<double,std::dextents<unsigned int, 2>> u, const unsigned int nsteps, const double dt, const double alpha, const double dx, const double length) {
 
   // Final (real) time simulated
   double time = dt * (double)nsteps;
@@ -203,9 +214,14 @@ double l2norm(const unsigned int n, const std::mdspan<double,std::dextents<unsig
   double y = dx;
   double x = dx;
 
-  return sqrt(std::transform_reduce(std::execution::par_unseq, &u(0,0), &u(n-1, n-1), 0.0, std::plus<double>(), [u, n, nsteps, dt, dx, alpha, length](int idx) {
-      int j = int(idx / n);  // Column index
-      int i = idx - (j * n); // Row index
+  // Create 1D ranges
+  auto xs = std::views::iota(0, n);
+  auto ys = std::views::iota(0, n);
+  // Combine xs and ys to create 2D range
+  auto ids = std::views::cartesian_product(xs, ys);
+
+  return sqrt(std::transform_reduce(std::execution::par_unseq, ids.begin(), ids.end(), 0.0, std::plus<double>(), [u, n, nsteps, dt, dx, alpha, length](auto idx) {
+      auto [i,j] = idx;
 
       double y = (j + 1) * dx; // y-coordinate
       double x = (i + 1) * dx; // x-coordinate

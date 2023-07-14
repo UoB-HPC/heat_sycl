@@ -11,4 +11,8 @@ heat
 heat_ocl
 heat_cuda
 heat_hip
+heat_algo
+heat_algo_span
+nvc_cpu
+nvc_gpu
 
