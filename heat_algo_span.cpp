@@ -17,7 +17,7 @@ void initial_value(const int n, const double dx, const double length, std::mdspa
 void zero(const int n,std::mdspan < double, std::dextents<unsigned int, 2>> u);
 void solve(const int n, const double alpha, const double dx, const double dt, const std::mdspan<double, std::dextents<unsigned int, 2>> u, const std::mdspan<double, std::dextents<unsigned int, 2>> u_tmp);
 double solution(const double t, const double x, const double y, const double alpha, const double length);
-double l2norm(const int n, const std::mdspan<double, std::dextents<unsigned int, 2>> u, const unsigned int nsteps, const double dt, const double alpha, const double dx, const double length);
+double l2norm(const int n, const std::mdspan<double, std::dextents<unsigned int, 2>> u, const int nsteps, const double dt, const double alpha, const double dx, const double length);
 
 // Main function
 int main(int argc, char *argv[])
@@ -29,7 +29,7 @@ int main(int argc, char *argv[])
   int n = 1000;
 
   // Number of timesteps
-  unsigned int nsteps = 10;
+  int nsteps = 10;
 
   // Check for the correct number of arguments
   // Print usage and exits if not correct
@@ -202,7 +202,7 @@ double solution(const double t, const double x, const double y, const double alp
 
 // Computes the L2-norm of the computed grid and the MMS known solution
 // The known solution is the same as the boundary function.
-double l2norm(const int n, const std::mdspan<double,std::dextents<unsigned int, 2>> u, const unsigned int nsteps, const double dt, const double alpha, const double dx, const double length) {
+double l2norm(const int n, const std::mdspan<double,std::dextents<unsigned int, 2>> u, const int nsteps, const double dt, const double alpha, const double dx, const double length) {
 
   // Final (real) time simulated
   double time = dt * (double)nsteps;
