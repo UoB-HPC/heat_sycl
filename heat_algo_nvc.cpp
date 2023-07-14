@@ -11,11 +11,11 @@
 #define LINE "--------------------\n" // A line for fancy output
 
 // Function definitions
-void initial_value(const unsigned int n, const double dx, const double length, std::vector<double> &u);
-void zero(const unsigned int n, std::vector<double> &u);
-void solve(const unsigned int n, const double alpha, const double dx, const double dt, const std::vector<double> &u, std::vector<double> &u_tmp);
+void initial_value(const int n, const double dx, const double length, std::vector<double> &u);
+void zero(const int n, std::vector<double> &u);
+void solve(const int n, const double alpha, const double dx, const double dt, const std::vector<double> &u, std::vector<double> &u_tmp);
 double solution(const double t, const double x, const double y, const double alpha, const double length);
-double l2norm(const unsigned int n, const std::vector<double> &u, const unsigned int nsteps, const double dt, const double alpha, const double dx, const double length);
+double l2norm(const int n, const std::vector<double> &u, const unsigned int nsteps, const double dt, const double alpha, const double dx, const double length);
 
 // Main function
 int main(int argc, char *argv[])
@@ -24,10 +24,10 @@ int main(int argc, char *argv[])
   auto start = std::chrono::high_resolution_clock::now();
 
   // Problem size, forms an nxn grid
-  unsigned int n = 1000;
+  int n = 1000;
 
   // Number of timesteps
-  unsigned int nsteps = 10;
+  int nsteps = 10;
 
   // Check for the correct number of arguments
   // Print usage and exits if not correct
@@ -137,7 +137,7 @@ int main(int argc, char *argv[])
 }
 
 // Sets the mesh to an initial value, determined by the MMS scheme
-void initial_value(const unsigned int n, const double dx, const double length, std::vector<double> &u)
+void initial_value(const int n, const double dx, const double length, std::vector<double> &u)
 {
   // Loop over all grid points (excluding boundaries)
   std::for_each_n(std::execution::par_unseq, u.begin(), n*n, [u = u.data(), n, dx, length](int index) {
@@ -152,13 +152,13 @@ void initial_value(const unsigned int n, const double dx, const double length, s
 }
 
 // Zero the array u
-void zero(const unsigned int n, std::vector<double> &u)
+void zero(const int n, std::vector<double> &u)
 {
   std::fill(std::execution::par_unseq, u.begin(), u.end(), 0.0);
 }
 
 // Function to solve the heat equation
-void solve(const unsigned int n, const double alpha, const double dx, const double dt, const std::vector<double> &u, std::vector<double> &u_tmp)
+void solve(const int n, const double alpha, const double dx, const double dt, const std::vector<double> &u, std::vector<double> &u_tmp)
 {
   // Finite difference constant multiplier
   const double r = alpha * dt / (dx * dx);
@@ -188,7 +188,7 @@ double solution(const double t, const double x, const double y, const double alp
 
 // Computes the L2-norm of the computed grid and the MMS known solution
 // The known solution is the same as the boundary function.
-double l2norm(const unsigned int n, const std::vector<double> &u, const unsigned int nsteps, const double dt, const double alpha, const double dx, const double length)
+double l2norm(const int n, const std::vector<double> &u, const unsigned int nsteps, const double dt, const double alpha, const double dx, const double length)
 {
   // Final (real) time simulated
   double time = dt * (double)nsteps;
