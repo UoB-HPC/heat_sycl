@@ -3,6 +3,7 @@
 #include <cmath>
 #include <vector>
 #include <numeric>
+#include <ranges>
 #include <execution>
 #include <algorithm>
 
@@ -140,7 +141,9 @@ int main(int argc, char *argv[])
 void initial_value(const int n, const double dx, const double length, std::vector<double> &u)
 {
   // Loop over all grid points (excluding boundaries)
-  std::for_each_n(std::execution::par, u.begin(), n*n, [u = u.data(), n, dx, length](int idx) {
+  auto ids = std::views::common(std::views::iota(0, (int)u.size()));
+
+  std::for_each(std::execution::par, ids.begin(), ids.end(), [u=u.data(), n, dx, length](int idx){
     const int j = int(idx / n); // Column index
     const int i = idx -(j*n); // Row index
 
@@ -148,8 +151,7 @@ void initial_value(const int n, const double dx, const double length, std::vecto
     const double y = (j + 1) * dx; // y-coordinate
 
     // Compute the known solution using MMS scheme
-    u[idx] = sin(PI * x / length) * sin(PI * y / length); 
-  });
+    u[idx] = sin(PI * x / length) * sin(PI * y / length); });
 }
 
 // Zero the array u
@@ -165,8 +167,10 @@ void solve(const int n, const double alpha, const double dx, const double dt, co
   const double r = alpha * dt / (dx * dx);
   const double r2 = 1.0 - 4.0 * r;
 
+  auto ids = std::views::common(std::views::iota(0, (int)u_tmp.size()));
+
   // Loop over all grid points (excluding boundaries)
-  std::for_each_n(std::execution::par, u_tmp.begin(), n*n, [u_tmp=u_tmp.data(), u = u.data(), n, r, r2](int idx) {
+  std::for_each(std::execution::par, ids.begin(), ids.end(), [u_tmp=u_tmp.data(), u = u.data(), n, r, r2](int idx) {
     const int j = int(idx / n); // Column index
     const int i = idx -(j*n); // Row index
 
@@ -183,7 +187,7 @@ void solve(const int n, const double alpha, const double dx, const double dt, co
 // Function to compute the exact solution at a given time and position
 double solution(const double t, const double x, const double y, const double alpha, const double length)
 {
-  return exp(-t * alpha * PI * PI / length / length) * (sin(PI * x / length) * sin(PI * y / length));
+  return exp(-2.0 * alpha * PI * PI * t / (length *length)) * (sin(PI * x / length) * sin(PI * y / length));
 }
 
 // Computes the L2-norm of the computed grid and the MMS known solution
@@ -191,18 +195,20 @@ double solution(const double t, const double x, const double y, const double alp
 double l2norm(const int n, const std::vector<double> &u, const int nsteps, const double dt, const double alpha, const double dx, const double length)
 {
   // Final (real) time simulated
-  double time = dt * (double)nsteps;
+  const double time = dt * (double)nsteps;
 
-  return sqrt(std::transform_reduce(std::execution::par_unseq, u.begin(), u.end(), 0.0, std::plus<double>(), [u=u.data(), n, nsteps, dt, dx, alpha, length](int idx) {
-    int j = int(idx / n); // Column index
-    int i = idx -(j*n); // Row index
+  auto ids = std::views::common(std::views::iota(0, (int)u.size()));
 
-    double y = (j + 1) * dx; // y-coordinate
-    double x = (i + 1) * dx; // x-coordinate
+  return sqrt(std::transform_reduce(std::execution::par, ids.begin(), ids.end(), 0.0, std::plus<double>(), [u = u.data(), n, nsteps, dt, dx, alpha, length, time](int idx)
+  {
+    const int j = int(idx / n);  // Column index
+    const int i = idx - (j * n); // Row index
 
-    double answer = solution(nsteps * dt, x, y, alpha, length);
+    const double y = (j + 1) * dx; // y-coordinate
+    const double x = (i + 1) * dx; // x-coordinate
+
+    const double answer = solution(time, x, y, alpha, length);
     return (u[idx] - answer) * (u[idx] - answer);
-
   }));
 }
 

@@ -145,13 +145,14 @@ int main(int argc, char *argv[])
 void initial_value(const int n, const double dx, const double length, std::mdspan<double, std::dextents<unsigned int, 2>> u)
 {
   // Create 1D ranges
-  auto xs = std::views::iota(0, n);
-  auto ys = std::views::iota(0, n);
+  auto xs = std::views::common(std::views::iota(0, n));
+  auto ys = std::views::common(std::views::iota(0, n));
+
   // Combine xs and ys to create 2D range
   auto ids = std::views::cartesian_product(xs, ys);
 
   // Loop over all grid points (excluding boundaries)
-  std::for_each(std::execution::par, ids.begin(), ids.end(), [u, n, dx, length](auto idx) {
+  std::for_each(std::execution::par, ids.begin(), ids.end(), [&u, n, dx, length](auto idx) {
     auto [i,j] = idx;
 
     const double x = (i + 1) * dx; // x-coordinate
@@ -177,13 +178,13 @@ void solve(const int n, const double alpha, const double dx, const double dt, co
   const double r2 = 1.0 - 4.0 * r;
 
   // Create 1D ranges
-  auto xs = std::views::iota(0, n);
-  auto ys = std::views::iota(0, n);
+  auto xs = std::views::common(std::views::iota(0, n));
+  auto ys = std::views::common(std::views::iota(0, n));
   //Combine xs and ys to create 2D range
   auto ids = std::views::cartesian_product(xs, ys);
 
   // Loop over all grid points (excluding boundaries)
-  std::for_each(std::execution::par_unseq, ids.begin(), ids.end(), [u, u_tmp, n, r, r2](auto idx) {
+  std::for_each(std::execution::par, ids.begin(), ids.end(), [&u, u_tmp, n, r, r2](auto idx) {
     auto [i,j] = idx;
     // Update the 5-point stencil, using boundary conditions on the edges of the domain.
     // Boundaries are zero because the MMS solution is zero there.
@@ -197,7 +198,7 @@ void solve(const int n, const double alpha, const double dx, const double dt, co
 // Function to compute the exact solution at a given time and position
 double solution(const double t, const double x, const double y, const double alpha, const double length)
 {
-  return exp(-t * alpha * PI * PI / length / length) * (sin(PI * x / length) * sin(PI * y / length));
+  return exp(-2.0 * alpha * PI * PI * t / (length * length)) * (sin(PI * x / length) * sin(PI * y / length));
 }
 
 // Computes the L2-norm of the computed grid and the MMS known solution
@@ -205,29 +206,30 @@ double solution(const double t, const double x, const double y, const double alp
 double l2norm(const int n, const std::mdspan<double,std::dextents<unsigned int, 2>> u, const int nsteps, const double dt, const double alpha, const double dx, const double length) {
 
   // Final (real) time simulated
-  double time = dt * (double)nsteps;
+  const double time = dt * (double)nsteps;
 
   // L2-norm error
   double l2norm = 0.0;
 
   // Loop over the grid and compute difference of computed and known solutions as an L2-norm
-  double y = dx;
-  double x = dx;
+  const double y = dx;
+  const double x = dx;
 
   // Create 1D ranges
-  auto xs = std::views::iota(0, n);
-  auto ys = std::views::iota(0, n);
+  auto xs = std::views::common(std::views::iota(0, n));
+  auto ys = std::views::common(std::views::iota(0, n));
   // Combine xs and ys to create 2D range
   auto ids = std::views::cartesian_product(xs, ys);
 
-  return sqrt(std::transform_reduce(std::execution::par_unseq, ids.begin(), ids.end(), 0.0, std::plus<double>(), [u, n, nsteps, dt, dx, alpha, length](auto idx) {
-      auto [i,j] = idx;
+  return sqrt(std::transform_reduce(std::execution::par, ids.begin(), ids.end(), 0.0, std::plus<double>(), [&u, n, nsteps, dt, dx, alpha, length, time](auto idx) {
+    //i is the row index, j is the column index
+    auto [i,j] = idx;
 
-      double y = (j + 1) * dx; // y-coordinate
-      double x = (i + 1) * dx; // x-coordinate
+    const double y = (i + 1) * dx; // y-coordinate
+    const double x = (j + 1) * dx; // x-coordinate
 
-      double answer = solution(nsteps * dt, x, y, alpha, length);
-      return (u(i,j) - answer) * (u(i,j) - answer);
+    const double answer = solution(time, x, y, alpha, length);
+    return (u(i,j) - answer) * (u(i,j) - answer);
   }));
 
 }
