@@ -11,6 +11,15 @@
 #define PI acos(-1.0)                 // Pi
 #define LINE "--------------------\n" // A line for fancy output
 
+//#define exe_pol std::execution::par 
+//#define exe_pol std::execution::par_unseq // Use for nvc++ when targeting gpu
+
+#ifdef __NVCOMPILER // Check if the NVCC compiler is being used
+#define exe_pol std::execution::par_unseq // Use for nvc++ when targeting gpu
+#else
+#define exe_pol std::execution::par
+#endif
+
 // Function definitions
 void initial_value(const int n, const double dx, const double length, std::vector<double> &u);
 void zero(const int n, std::vector<double> &u);
@@ -143,7 +152,7 @@ void initial_value(const int n, const double dx, const double length, std::vecto
   // Loop over all grid points (excluding boundaries)
   auto ids = std::views::common(std::views::iota(0, (int)u.size()));
 
-  std::for_each(std::execution::par, ids.begin(), ids.end(), [u=u.data(), n, dx, length](int idx){
+  std::for_each(exe_pol, ids.begin(), ids.end(), [=,u=u.data()](int idx){
     const int j = int(idx / n); // Column index
     const int i = idx -(j*n); // Row index
 
@@ -152,12 +161,13 @@ void initial_value(const int n, const double dx, const double length, std::vecto
 
     // Compute the known solution using MMS scheme
     u[idx] = sin(PI * x / length) * sin(PI * y / length); });
+
 }
 
 // Zero the array u
 void zero(const int n, std::vector<double> &u)
 {
-  std::fill(std::execution::par, u.begin(), u.end(), 0.0);
+  std::fill(exe_pol, u.begin(), u.end(), 0.0);
 }
 
 // Function to solve the heat equation
@@ -170,7 +180,8 @@ void solve(const int n, const double alpha, const double dx, const double dt, co
   auto ids = std::views::common(std::views::iota(0, (int)u_tmp.size()));
 
   // Loop over all grid points (excluding boundaries)
-  std::for_each(std::execution::par, ids.begin(), ids.end(), [u_tmp=u_tmp.data(), u = u.data(), n, r, r2](int idx) {
+  std::for_each(exe_pol, ids.begin(), ids.end(), [=, u_tmp = u_tmp.data(), u = u.data()](int idx)
+                {
     const int j = int(idx / n); // Column index
     const int i = idx -(j*n); // Row index
 
@@ -180,8 +191,7 @@ void solve(const int n, const double alpha, const double dx, const double dt, co
           r * ((i < n - 1) ? u[idx+1] : 0.0) +
           r * ((i > 0) ? u[idx-1] : 0.0) +
           r * ((j < n - 1) ? u[idx + n] : 0.0) +
-          r * ((j > 0) ? u[idx-n] : 0.0);
-  });
+          r * ((j > 0) ? u[idx-n] : 0.0); });
 }
 
 // Function to compute the exact solution at a given time and position
@@ -199,8 +209,8 @@ double l2norm(const int n, const std::vector<double> &u, const int nsteps, const
 
   auto ids = std::views::common(std::views::iota(0, (int)u.size()));
 
-  return sqrt(std::transform_reduce(std::execution::par, ids.begin(), ids.end(), 0.0, std::plus<double>(), [u = u.data(), n, nsteps, dt, dx, alpha, length, time](int idx)
-  {
+  return sqrt(std::transform_reduce(exe_pol, ids.begin(), ids.end(), 0.0, std::plus<double>(), [=, u = u.data()](int idx)
+                                    {
     const int j = int(idx / n);  // Column index
     const int i = idx - (j * n); // Row index
 
@@ -208,7 +218,6 @@ double l2norm(const int n, const std::vector<double> &u, const int nsteps, const
     const double x = (i + 1) * dx; // x-coordinate
 
     const double answer = solution(time, x, y, alpha, length);
-    return (u[idx] - answer) * (u[idx] - answer);
-  }));
+    return (u[idx] - answer) * (u[idx] - answer); }));
 }
 

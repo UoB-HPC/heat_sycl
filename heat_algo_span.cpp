@@ -3,9 +3,9 @@
 #include <cmath>
 #include <vector>
 #include <numeric>
-#include <execution> // https://github.com/nvidia/stdexec
+#include <execution>
 #include <algorithm>
-#include "/usr/include/experimental/mdspan" // https://github.com/kokkos/mdspan
+#include "/usr/include/experimental/mdspan"
 #include "./algos_include/cartesian_product.hpp" 
 
 // Key constants used in this program
@@ -152,7 +152,7 @@ void initial_value(const int n, const double dx, const double length, std::mdspa
   auto ids = std::views::cartesian_product(xs, ys);
 
   // Loop over all grid points (excluding boundaries)
-  std::for_each(std::execution::par, ids.begin(), ids.end(), [&u, n, dx, length](auto idx) {
+  std::for_each(std::execution::par, ids.begin(), ids.end(), [=](auto idx) {
     auto [i,j] = idx;
 
     const double x = (i + 1) * dx; // x-coordinate
@@ -184,7 +184,7 @@ void solve(const int n, const double alpha, const double dx, const double dt, co
   auto ids = std::views::cartesian_product(xs, ys);
 
   // Loop over all grid points (excluding boundaries)
-  std::for_each(std::execution::par, ids.begin(), ids.end(), [&u, u_tmp, n, r, r2](auto idx) {
+  std::for_each(std::execution::par, ids.begin(), ids.end(), [=](auto idx) {
     auto [i,j] = idx;
     // Update the 5-point stencil, using boundary conditions on the edges of the domain.
     // Boundaries are zero because the MMS solution is zero there.
@@ -221,7 +221,7 @@ double l2norm(const int n, const std::mdspan<double,std::dextents<unsigned int, 
   // Combine xs and ys to create 2D range
   auto ids = std::views::cartesian_product(xs, ys);
 
-  return sqrt(std::transform_reduce(std::execution::par, ids.begin(), ids.end(), 0.0, std::plus<double>(), [&u, n, nsteps, dt, dx, alpha, length, time](auto idx) {
+  return sqrt(std::transform_reduce(std::execution::par, ids.begin(), ids.end(), 0.0, std::plus<double>(), [=](auto idx) {
     //i is the row index, j is the column index
     auto [i,j] = idx;
 

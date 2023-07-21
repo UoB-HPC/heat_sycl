@@ -1,14 +1,12 @@
-
 # std::execution port: https://github.com/nvidia/stdexec
 # std::mdspan port: https://github.com/kokkos/mdspan
-
 
 CC=g++
 CFLAGS= -std=c++20 -Ofast -march=native -DNDEBUG
 CLIBS= -ltbb
 
 NC=nvc++
-NFLAGS= -std=c++20 -O4 -fast -march=native -DNDEBUG -Mllvm-fast -DNDEBUG
+NFLAGS= -std=c++20 -O4 -fast -march=native -DNDEBUG -Mllvm-fast
 
 all: heat_algo
 
@@ -18,10 +16,10 @@ heat_algo: heat_algo.cpp
 heat_algo_span: heat_algo_span.cpp
 	$(CC) $(CFLAGS) -o $@ $^ $(CLIBS)
 
-nvc_cpu: heat_algo_nvc.cpp
+nvc_cpu: heat_algo.cpp
 	$(NC) -stdpar=multicore $(NFLAGS) -o heat_algo_nvc_cpu $^
 
-nvc_gpu: heat_algo_nvc.cpp
+nvc_gpu: heat_algo.cpp
 	$(NC) -stdpar=gpu $(NFLAGS) -o heat_algo_nvc_gpu $^
 
 clean:
